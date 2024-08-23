@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public class JsonPropertyAccessorTests {
 	@BeforeEach
 	public void setup() {
 		context.addPropertyAccessor(new JsonPropertyAccessor());
+		context.addIndexAccessor(new JsonIndexAccessor());
 		ConverterRegistry converterRegistry = (ConverterRegistry) DefaultConversionService.getSharedInstance();
 		converterRegistry.addConverter(new JsonNodeWrapperToJsonNodeConverter());
 	}
@@ -88,7 +89,14 @@ public class JsonPropertyAccessorTests {
 	}
 
 	@Test
-	public void testArrayLookup() throws Exception {
+	public void testArrayLookupWithIntegerIndex() throws Exception {
+		ArrayNode json = (ArrayNode) mapper.readTree("[3, 4, 5]");
+		Integer actual = evaluate(json, "[1]", Integer.class);
+		assertThat(actual).isEqualTo(4);
+	}
+
+	@Test
+	public void testArrayLookupWithIntegerIndexAndExplicitWrapping() throws Exception {
 		ArrayNode json = (ArrayNode) mapper.readTree("[3, 4, 5]");
 		// Have to wrap the root array because ArrayNode itself is not a List
 		Integer actual = evaluate(JsonPropertyAccessor.wrap(json), "[1]", Integer.class);
@@ -117,7 +125,14 @@ public class JsonPropertyAccessorTests {
 	}
 
 	@Test
-	public void testNestedArrayConstruct() throws Exception {
+	public void testNestedArrayConstructWithIntegerIndex() throws Exception {
+		ArrayNode json = (ArrayNode) mapper.readTree("[[3], [4, 5], []]");
+		Object actual = evaluate(json, "[1][1]", Object.class);
+		assertThat(actual).isEqualTo(5);
+	}
+
+	@Test
+	public void testNestedArrayConstructWithIntegerIndexAndExplicitWrapping() throws Exception {
 		ArrayNode json = (ArrayNode) mapper.readTree("[[3], [4, 5], []]");
 		// JsonNode actual = evaluate("1.1", json, JsonNode.class); // Does not work
 		Object actual = evaluate(JsonPropertyAccessor.wrap(json), "[1][1]", Object.class);

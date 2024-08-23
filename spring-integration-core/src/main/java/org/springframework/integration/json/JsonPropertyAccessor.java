@@ -31,7 +31,6 @@ import org.springframework.expression.PropertyAccessor;
 import org.springframework.expression.TypedValue;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * A SpEL {@link PropertyAccessor} that knows how to read properties from JSON objects.
@@ -45,6 +44,7 @@ import org.springframework.util.StringUtils;
  * @author Vladislav Fefelov
  *
  * @since 3.0
+ * @see JsonIndexAccessor
  */
 public class JsonPropertyAccessor implements PropertyAccessor {
 
@@ -72,17 +72,12 @@ public class JsonPropertyAccessor implements PropertyAccessor {
 
 	@Override
 	public boolean canRead(EvaluationContext context, Object target, String name) throws AccessException {
-		JsonNode node;
 		try {
-			node = asJson(target);
+			asJson(target);
 		}
 		catch (AccessException e) {
 			// Cannot parse - treat as not a JSON
 			return false;
-		}
-		Integer index = maybeIndex(name);
-		if (node instanceof ArrayNode) {
-			return index != null;
 		}
 		return true;
 	}
@@ -107,31 +102,9 @@ public class JsonPropertyAccessor implements PropertyAccessor {
 		}
 	}
 
-	/**
-	 * Return an integer if the String property name can be parsed as an int, or null otherwise.
-	 */
-	private static Integer maybeIndex(String name) {
-		if (!isNumeric(name)) {
-			return null;
-		}
-		try {
-			return Integer.valueOf(name);
-		}
-		catch (NumberFormatException e) {
-			return null;
-		}
-	}
-
 	@Override
 	public TypedValue read(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
-		JsonNode node = asJson(target);
-		Integer index = maybeIndex(name);
-		if (index != null && node.has(index)) {
-			return typedValue(node.get(index));
-		}
-		else {
-			return typedValue(node.get(name));
-		}
+		return typedValue(asJson(target).get(name));
 	}
 
 	@Override
@@ -144,22 +117,6 @@ public class JsonPropertyAccessor implements PropertyAccessor {
 		throw new UnsupportedOperationException("Write is not supported");
 	}
 
-	/**
-	 * Check if the string is a numeric representation (all digits) or not.
-	 */
-	private static boolean isNumeric(String str) {
-		if (!StringUtils.hasLength(str)) {
-			return false;
-		}
-		int length = str.length();
-		for (int i = 0; i < length; i++) {
-			if (!Character.isDigit(str.charAt(i))) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	private static TypedValue typedValue(JsonNode json) throws AccessException {
 		if (json == null) {
 			return TypedValue.NULL;
@@ -170,7 +127,7 @@ public class JsonPropertyAccessor implements PropertyAccessor {
 		return new TypedValue(wrap(json));
 	}
 
-	private static Object getValue(JsonNode json) throws AccessException {
+	static Object getValue(JsonNode json) throws AccessException {
 		if (json.isTextual()) {
 			return json.textValue();
 		}
