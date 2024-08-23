@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2023 the original author or authors.
+ * Copyright 2013-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * A SpEL {@link PropertyAccessor} that knows how to read properties from JSON objects.
- * Uses Jackson {@link JsonNode} API for nested properties access.
+ * <p>Uses Jackson {@link JsonNode} API for nested properties access.
  *
  * @author Eric Bottard
  * @author Artem Bilan
@@ -88,15 +88,15 @@ public class JsonPropertyAccessor implements PropertyAccessor {
 	}
 
 	private JsonNode asJson(Object target) throws AccessException {
-		if (target instanceof JsonNode) {
-			return (JsonNode) target;
+		if (target instanceof JsonNode jsonNode) {
+			return jsonNode;
 		}
-		else if (target instanceof JsonNodeWrapper) {
-			return ((JsonNodeWrapper<?>) target).getRealNode();
+		else if (target instanceof JsonNodeWrapper<?> jsonNodeWrapper) {
+			return jsonNodeWrapper.getRealNode();
 		}
-		else if (target instanceof String) {
+		else if (target instanceof String text) {
 			try {
-				return this.objectMapper.readTree((String) target);
+				return this.objectMapper.readTree(text);
 			}
 			catch (JsonProcessingException e) {
 				throw new AccessException("Exception while trying to deserialize String", e);
@@ -211,8 +211,6 @@ public class JsonPropertyAccessor implements PropertyAccessor {
 	}
 
 	interface JsonNodeWrapper<T> extends Comparable<T> {
-
-		String toString();
 
 		JsonNode getRealNode();
 
